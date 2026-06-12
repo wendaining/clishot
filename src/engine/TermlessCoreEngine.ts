@@ -1,12 +1,15 @@
 import { EventEmitter } from "node:events";
 import path from "node:path";
-import { Terminal } from "@xterm/headless";
-import { SerializeAddon } from "@xterm/addon-serialize";
+import xtermHeadless from "@xterm/headless";
+import xtermSerialize from "@xterm/addon-serialize";
 import type { IPty } from "node-pty";
 import type { ClishotConfig } from "../config/schema.js";
 import { ClishotError } from "../utils/errors.js";
 import { sleep } from "../utils/time.js";
 import { mapKeyCombo } from "./KeyMapper.js";
+
+const { Terminal } = xtermHeadless as typeof import("@xterm/headless");
+const { SerializeAddon } = xtermSerialize as typeof import("@xterm/addon-serialize");
 
 export interface TerminalSnapshot {
   cols: number;
@@ -29,8 +32,8 @@ export interface LoadedTermless {
 }
 
 export class TermlessCoreEngine extends EventEmitter {
-  private terminal: Terminal | undefined;
-  private serializeAddon: SerializeAddon | undefined;
+  private terminal: InstanceType<typeof Terminal> | undefined;
+  private serializeAddon: InstanceType<typeof SerializeAddon> | undefined;
   private pty: IPty | undefined;
   private outputBytes = 0;
   private lastOutputAt = Date.now();
@@ -217,7 +220,7 @@ export class TermlessCoreEngine extends EventEmitter {
     return this.pty;
   }
 
-  private requireTerminal(): Terminal {
+  private requireTerminal(): InstanceType<typeof Terminal> {
     if (!this.terminal) {
       throw new ClishotError("Terminal is not initialized.", 7);
     }
