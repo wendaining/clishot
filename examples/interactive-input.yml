@@ -1,0 +1,24 @@
+shell:
+  program: pwsh
+  args: ["-NoLogo"]
+
+terminal:
+  cols: 100
+  rows: 30
+
+steps:
+  - type: send
+    text: "python"
+    enter: true
+    waitFor:
+      text: ">>>"
+  - type: send
+    text: "print('hello from clishot')"
+    enter: true
+    waitFor:
+      text: "hello from clishot"
+  - type: key
+    combo: Ctrl+Z
+    waitFor:
+      idleMs: 500
+

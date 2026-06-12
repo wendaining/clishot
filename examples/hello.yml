@@ -1,0 +1,18 @@
+shell:
+  program: pwsh
+  args: ["-NoLogo"]
+
+terminal:
+  cols: 100
+  rows: 30
+
+capture:
+  mode: viewport
+
+steps:
+  - type: send
+    text: "python --version"
+    enter: true
+    waitFor:
+      idleMs: 800
+

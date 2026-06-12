@@ -1,0 +1,42 @@
+{
+  "name": "clishot",
+  "version": "0.1.0",
+  "description": "Report-oriented terminal screenshot workflows powered by termless core.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "clishot": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@termless/core": "^0.7.0",
+    "@xterm/addon-serialize": "^0.13.0",
+    "@xterm/headless": "^5.5.0",
+    "commander": "^14.0.2",
+    "fs-extra": "^11.3.2",
+    "node-pty": "^1.1.0-beta34",
+    "sharp": "^0.34.5",
+    "yaml": "^2.8.2",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^24.10.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
