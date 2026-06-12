@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import xtermHeadless from "@xterm/headless";
 import xtermSerialize from "@xterm/addon-serialize";
@@ -36,8 +37,12 @@ export class TermlessCoreEngine extends EventEmitter {
   private serializeAddon: InstanceType<typeof SerializeAddon> | undefined;
   private pty: IPty | undefined;
   private outputBytes = 0;
+  private rawOutput = "";
   private lastOutputAt = Date.now();
   private running = false;
+  private pendingWrites: Array<Promise<void>> = [];
+  private exitPromise: Promise<void> | undefined;
+  private resolveExit: (() => void) | undefined;
 
   constructor(private readonly config: ClishotConfig) {
     super();
@@ -62,7 +67,7 @@ export class TermlessCoreEngine extends EventEmitter {
       );
     }
 
-    const nodePty = await import("node-pty").catch((error) => {
+    const nodePty = await import("@homebridge/node-pty-prebuilt-multiarch").catch((error) => {
       throw new ClishotError("node-pty is required for real terminal sessions.", 7, String(error));
     });
 
@@ -84,7 +89,7 @@ export class TermlessCoreEngine extends EventEmitter {
     this.serializeAddon = serializeAddon;
 
     const shell = this.config.shell;
-    const program = shell.program ?? (process.platform === "win32" ? "pwsh" : process.env.SHELL ?? "bash");
+    const program = resolveExecutable(shell.program ?? (process.platform === "win32" ? "pwsh" : process.env.SHELL ?? "bash"));
     const args = shell.args ?? [];
     const cwd = shell.cwd ? path.resolve(shell.cwd) : process.cwd();
     const env = { ...process.env, ...shell.env };
@@ -97,6 +102,7 @@ export class TermlessCoreEngine extends EventEmitter {
         rows: this.config.terminal.rows,
         cwd,
         env,
+        useConptyDll: process.platform === "win32",
       });
       this.pty = pty;
     } catch (error) {
@@ -104,28 +110,41 @@ export class TermlessCoreEngine extends EventEmitter {
     }
 
     this.running = true;
+    this.exitPromise = new Promise((resolve) => {
+      this.resolveExit = resolve;
+    });
     const pty = this.requirePty();
     pty.onData((chunk) => {
       this.outputBytes += Buffer.byteLength(chunk);
+      this.rawOutput += chunk;
       this.lastOutputAt = Date.now();
+      this.emitEvent("terminal:output", { bytes: Buffer.byteLength(chunk) });
       const maxOutputBytes = this.config.limits.maxOutputBytes ?? 20000000;
       if (this.outputBytes > maxOutputBytes) {
         this.stop();
         this.emitEvent("limit:maxOutputBytes", { maxOutputBytes });
       }
-      this.terminal?.write(chunk);
+      const write = new Promise<void>((resolve) => {
+        this.terminal?.write(chunk, resolve);
+      });
+      this.pendingWrites.push(write);
+      void write.finally(() => {
+        this.pendingWrites = this.pendingWrites.filter((item) => item !== write);
+      });
     });
     pty.onExit(({ exitCode, signal }) => {
       this.running = false;
       this.emitEvent("shell:exit", { exitCode, signal });
+      this.resolveExit?.();
     });
 
-    await this.waitForIdle(Math.min(shell.startupTimeoutMs ?? 10000, 1500));
+    await this.waitForStartup(shell.startupTimeoutMs ?? 10000);
   }
 
   async send(text: string, enter = false): Promise<void> {
     this.requirePty();
     this.emitEvent("input:send", { text, enter });
+    this.lastOutputAt = Date.now();
     this.pty!.write(`${text}${enter ? "\r" : ""}`);
   }
 
@@ -133,12 +152,14 @@ export class TermlessCoreEngine extends EventEmitter {
     this.requirePty();
     const sequence = mapKeyCombo(combo);
     this.emitEvent("input:key", { combo });
+    this.lastOutputAt = Date.now();
     this.pty!.write(sequence);
   }
 
   async resize(cols: number, rows: number): Promise<void> {
     this.requirePty();
     this.emitEvent("terminal:resize", { cols, rows });
+    this.lastOutputAt = Date.now();
     this.pty!.resize(cols, rows);
     this.terminal?.resize(cols, rows);
   }
@@ -151,14 +172,28 @@ export class TermlessCoreEngine extends EventEmitter {
   }
 
   stop(): void {
-    if (this.pty) {
+    if (this.pty && this.running) {
       this.pty.kill();
       this.running = false;
     }
   }
 
+  async shutdown(): Promise<void> {
+    await this.flush();
+    this.stop();
+    await Promise.race([this.exitPromise ?? Promise.resolve(), sleep(1000)]);
+    this.pty = undefined;
+  }
+
+  async flush(): Promise<void> {
+    await Promise.allSettled(this.pendingWrites);
+  }
+
   async waitForText(text: string, timeoutMs: number): Promise<void> {
-    await this.until(() => this.getPlainText().includes(text), timeoutMs, `Timed out waiting for text: ${text}`);
+    await this.until(async () => {
+      await this.flush();
+      return this.getPlainText().includes(text);
+    }, timeoutMs, `Timed out waiting for text: ${text}`);
   }
 
   async waitForRegex(regex: string, timeoutMs: number): Promise<void> {
@@ -168,11 +203,22 @@ export class TermlessCoreEngine extends EventEmitter {
     } catch (error) {
       throw new ClishotError(`Invalid waitFor.regex: ${regex}`, 1, String(error));
     }
-    await this.until(() => compiled.test(this.getPlainText()), timeoutMs, `Timed out waiting for regex: ${regex}`);
+    await this.until(async () => {
+      await this.flush();
+      return compiled.test(this.getPlainText());
+    }, timeoutMs, `Timed out waiting for regex: ${regex}`);
   }
 
   async waitForIdle(idleMs: number, timeoutMs = Math.max(idleMs + 1000, this.config.limits.stepTimeoutMs ?? 15000)): Promise<void> {
-    await this.until(() => Date.now() - this.lastOutputAt >= idleMs, timeoutMs, `Timed out waiting for ${idleMs}ms idle`);
+    await this.until(async () => {
+      await this.flush();
+      return Date.now() - this.lastOutputAt >= idleMs;
+    }, timeoutMs, `Timed out waiting for ${idleMs}ms idle`);
+  }
+
+  async waitForStartup(timeoutMs: number): Promise<void> {
+    await this.until(() => this.outputBytes > 0 || !this.running, timeoutMs, "Timed out waiting for initial terminal output");
+    await this.waitForIdle(2500, Math.min(timeoutMs, 6000));
   }
 
   snapshot(): TerminalSnapshot {
@@ -201,13 +247,16 @@ export class TermlessCoreEngine extends EventEmitter {
       lines.push(buffer.getLine(index)?.translateToString(true) ?? "");
     }
     while (lines.length > 1 && lines[0] === "") lines.shift();
+    if (lines.every((line) => line === "") && this.rawOutput) {
+      return normalizeTerminalText(this.rawOutput);
+    }
     return lines;
   }
 
-  private async until(check: () => boolean, timeoutMs: number, message: string): Promise<void> {
+  private async until(check: () => boolean | Promise<boolean>, timeoutMs: number, message: string): Promise<void> {
     const started = Date.now();
     while (Date.now() - started <= timeoutMs) {
-      if (check()) return;
+      if (await check()) return;
       await sleep(50);
     }
     throw new ClishotError(message, 3);
@@ -232,3 +281,23 @@ export class TermlessCoreEngine extends EventEmitter {
     this.emit("event", event);
   }
 }
+
+const resolveExecutable = (program: string): string => {
+  if (path.isAbsolute(program) || process.platform !== "win32") return program;
+  const result = spawnSync("where.exe", [program], { encoding: "utf8" });
+  const first = result.stdout.split(/\r?\n/).find(Boolean);
+  return first ?? program;
+};
+
+const normalizeTerminalText = (value: string): string[] => {
+  const withoutAnsi = value
+    .replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g, "")
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+    .replace(/\x1b[=>()#][0-9A-Za-z]/g, "")
+    .replace(/\x1b./g, "");
+  const normalized = withoutAnsi.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines = normalized.split("\n").map((line) => line.trimEnd());
+  while (lines.length > 1 && lines[0] === "") lines.shift();
+  while (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
+  return lines.length ? lines : [""];
+};

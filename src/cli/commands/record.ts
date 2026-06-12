@@ -16,6 +16,7 @@ export const recordCommand = async (
     captureDir?: string;
     shotsDir?: string;
     noClean?: boolean;
+    clean?: boolean;
     timeout?: string;
   },
 ): Promise<void> => {
@@ -38,8 +39,7 @@ export const recordCommand = async (
     debug: Boolean(options.debug),
     captureDir: path.resolve(options.captureDir ?? defaultCaptureDir(specFile)),
     shotsDir: options.shotsDir ? path.resolve(options.shotsDir) : undefined,
-    noClean: Boolean(options.noClean),
+    noClean: Boolean(options.noClean || options.clean === false),
   });
   console.log(`Wrote ${outFile}`);
 };
-

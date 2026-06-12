@@ -43,11 +43,12 @@ export const runRecord = async (config: ClishotConfig, options: RecordOptions): 
   await fs.writeFile(path.join(options.captureDir, "normalized.yml"), YAML.stringify(config), "utf8");
   await fs.writeFile(eventsPath, "", "utf8");
 
+  const pendingEvents: Array<Promise<void>> = [];
   const appendEvent = async (event: EngineEvent): Promise<void> => {
     await fs.appendFile(eventsPath, `${JSON.stringify(event)}\n`, "utf8");
   };
   engine.on("event", (event: EngineEvent) => {
-    void appendEvent(event);
+    pendingEvents.push(appendEvent(event));
   });
 
   let failed = false;
@@ -67,6 +68,7 @@ export const runRecord = async (config: ClishotConfig, options: RecordOptions): 
       clearTimeout(totalTimeout);
     }
 
+    await engine.flush();
     const snapshot = engine.snapshot();
     await fs.writeFile(path.join(options.captureDir, "normalized.txt"), snapshot.lines.join("\n"), "utf8");
     const finalPlan = planCapture(snapshot, config.capture);
@@ -75,6 +77,7 @@ export const runRecord = async (config: ClishotConfig, options: RecordOptions): 
   } catch (error) {
     failed = true;
     if (error instanceof ClishotError && error.code === 3 && config.limits.onTimeout === "capture-and-success") {
+      await engine.flush();
       const snapshot = engine.snapshot();
       const finalPlan = planCapture(snapshot, config.capture);
       await screenshotManager.write(options.outFile, finalPlan);
@@ -82,7 +85,8 @@ export const runRecord = async (config: ClishotConfig, options: RecordOptions): 
     }
     throw error;
   } finally {
-    engine.stop();
+    await engine.shutdown();
+    await Promise.allSettled(pendingEvents);
     if (!failed && !options.debug && !options.noClean) {
       await fs.remove(options.captureDir);
     }
@@ -111,6 +115,7 @@ const runStep = async (
       await engine.resize(step.cols, step.rows);
       break;
     case "screenshot": {
+      await engine.flush();
       const snapshot = engine.snapshot();
       const plan = planCapture(snapshot, step.capture ?? { mode: "viewport" });
       await screenshotManager.write(path.join(officialShotsDir, `${step.name}.${format}`), plan);
@@ -123,4 +128,3 @@ const runStep = async (
   }
   await applyWaitFor(engine, step.waitFor, 15000);
 };
-

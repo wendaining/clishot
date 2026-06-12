@@ -48,6 +48,7 @@ function wrap<T extends unknown[]>(fn: (...args: T) => Promise<void>) {
   return async (...args: T) => {
     try {
       await fn(...args);
+      process.exit(0);
     } catch (error) {
       handleError(error);
     }
@@ -71,4 +72,3 @@ function handleError(error: unknown): never {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(8);
 }
-

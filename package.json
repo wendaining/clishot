@@ -20,12 +20,13 @@
     "lint": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@termless/core": "^0.7.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/headless": "^5.5.0",
     "commander": "^14.0.2",
     "fs-extra": "^11.3.2",
-    "node-pty": "^1.1.0-beta34",
+    "node-pty": "^1.1.0",
     "sharp": "^0.34.5",
     "yaml": "^2.8.2",
     "zod": "^4.2.1"
