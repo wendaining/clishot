@@ -1,6 +1,6 @@
 # clishot
 
-<img src="./img/clishot-logo.png" alt="logo" style="zoom:10%">
+<img src="./img/clishot-logo.png" alt="logo" width=250>
 
 `clishot` 是一个通过 YAML 编写真实的终端命令作为驱动，基于用户本机真实的终端生成**伪终端截图**的工具。适合 Agent 自动化工作流。
 

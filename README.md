@@ -2,7 +2,7 @@
 
 **[中文 README](./docs/README.zh-CN.md)**
 
-<img src="./docs/img/clishot-logo.png" alt="logo" style="zoom:10%">
+<img src="./docs/img/clishot-logo.png" alt="logo" width=250>
 
 `clishot` generates **pseudo-terminal screenshots** by executing real terminal commands defined in YAML workflows on your local machine. Ideal for agent automation workflows.
 
