@@ -4,18 +4,40 @@
 
 clishot is built on top of termless and uses termless core as its terminal automation and rendering engine. We sincerely thank the termless project and its contributors.
 
-## Install
+## Quick Start From The Repo
+
+If you just found this repository and want to try it locally, clone it, install dependencies, build the CLI, and run one of the included examples:
+
+```bash
+git clone <repo-url> clishot
+cd clishot
+npm install
+npm run build
+node dist/cli/index.js doctor
+node dist/cli/index.js record examples/hello.yml --out tmp/hello.png --force
+```
+
+The generated image will be written to `tmp/hello.png`. Internal debug artifacts are written under `tmp/tmp-*` and are ignored by Git.
+
+During development you can also link the local CLI:
+
+```bash
+npm link
+clishot doctor
+clishot record examples/hello.yml --out tmp/hello.png --force
+```
+
+## Install As A CLI
 
 ```bash
 npm install -g clishot
 ```
 
-For local development:
+If you installed from npm, use the `clishot` command directly:
 
 ```bash
-npm install
-npm run build
-node dist/cli/index.js doctor
+clishot doctor
+clishot record examples/hello.yml --out tmp/hello.png --force
 ```
 
 ## Basic Usage
@@ -101,6 +123,12 @@ clishot fails for configuration errors, shell startup failure, wait timeouts, te
 ## Cross Platform Notes
 
 Windows defaults to `pwsh -NoLogo` when no shell is configured. Linux and macOS use `$SHELL` or `bash`. WSL is supported through explicit `shell.program: wsl.exe` configuration.
+
+## Agent Skill
+
+This repository includes an Agent-facing Skill at `skills/clishot/SKILL.md`. Use it when an AI agent needs to generate clishot YAML, run `clishot record`, insert screenshots into reports, or debug failed captures.
+
+The Skill is guidance only; it does not add runtime features. Human users can read it as a compact workflow guide, while agents should follow it together with `docs/SPEC.md` and `docs/git-rule.md` when working in this repository.
 
 ## License
 

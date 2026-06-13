@@ -4,18 +4,40 @@
 
 clishot 构建在 termless 之上，使用 termless core 作为终端自动化和渲染引擎。我们真诚感谢 termless 项目及其贡献者。
 
-## 安装
+## 从仓库开始使用
+
+如果你是在 GitHub 或本地刷到这个仓库，想先试一下，可以直接 clone、安装依赖、构建 CLI，然后运行自带示例：
+
+```bash
+git clone <repo-url> clishot
+cd clishot
+npm install
+npm run build
+node dist/cli/index.js doctor
+node dist/cli/index.js record examples/hello.yml --out tmp/hello.png --force
+```
+
+生成的图片会写到 `tmp/hello.png`。内部调试产物会放在 `tmp/tmp-*` 下，并且不会进入 Git。
+
+开发时也可以把本地 CLI link 到全局：
+
+```bash
+npm link
+clishot doctor
+clishot record examples/hello.yml --out tmp/hello.png --force
+```
+
+## 作为 CLI 安装
 
 ```bash
 npm install -g clishot
 ```
 
-本地开发：
+如果是从 npm 安装，可以直接使用 `clishot` 命令：
 
 ```bash
-npm install
-npm run build
-node dist/cli/index.js doctor
+clishot doctor
+clishot record examples/hello.yml --out tmp/hello.png --force
 ```
 
 ## 基础用法
@@ -101,6 +123,12 @@ clishot 只在配置错误、shell 启动失败、waitFor 超时、termless core
 ## 跨平台说明
 
 Windows 默认推断 `pwsh -NoLogo`。Linux 和 macOS 默认使用 `$SHELL` 或 `bash`。WSL 通过显式 `shell.program: wsl.exe` 配置支持。
+
+## Agent Skill
+
+仓库提供面向 Agent 的 Skill：`skills/clishot/SKILL.md`。当 AI Agent 需要生成 clishot YAML、运行 `clishot record`、把截图插入报告，或排查失败的 capture 时，应优先阅读并遵守这个 Skill。
+
+Skill 只是操作指南，不会增加新的运行时功能。普通用户也可以把它当作一份精简工作流说明；参与本仓库开发的 Agent 还应同时阅读 `docs/SPEC.md` 和 `docs/git-rule.md`。
 
 ## License
 
