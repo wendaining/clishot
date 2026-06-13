@@ -36,6 +36,8 @@ steps:
 
 Choose `shell.program` explicitly when the workflow depends on a specific shell. On Windows prefer `pwsh` with `["-NoLogo"]`; do not add `-NoProfile` unless the user requests it. On Linux and macOS use `bash`, `zsh`, or the user's `$SHELL` as appropriate.
 
+Keep `appearance.window.title` realistic when setting it. In most cases, use the shell name shown to the user, such as `zsh`, `bash`, `pwsh`, or `cmd`, rather than a descriptive demo title.
+
 ## Steps and Waiting
 
 Use `send` for typed commands and test input, `key` for combinations such as `Ctrl+C`, `resize` for deliberate terminal size changes, `wait` for fixed pauses, and `screenshot` for named intermediate images.
