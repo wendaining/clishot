@@ -10,22 +10,63 @@ export interface CapturePlan {
 }
 
 export const planCapture = (snapshot: TerminalSnapshot, capture: CaptureConfig): CapturePlan => {
+  const cleanedSnapshot = trimTrailingBlankLines(snapshot);
   switch (capture.mode) {
     case "viewport":
       return { cols: snapshot.cols, rows: snapshot.rows, lines: snapshot.viewportLines, styledLines: snapshot.viewportStyledLines };
     case "lastLines":
       return {
-        cols: snapshot.cols,
-        rows: Math.min(capture.lines, snapshot.lines.length),
-        lines: snapshot.lines.slice(-capture.lines),
-        styledLines: snapshot.styledLines.slice(-capture.lines),
+        cols: cleanedSnapshot.cols,
+        rows: Math.min(capture.lines, cleanedSnapshot.lines.length),
+        lines: cleanedSnapshot.lines.slice(-capture.lines),
+        styledLines: cleanedSnapshot.styledLines.slice(-capture.lines),
       };
     case "fullScrollback":
-      return { cols: snapshot.cols, rows: snapshot.lines.length, lines: snapshot.lines, styledLines: snapshot.styledLines };
+      return {
+        cols: cleanedSnapshot.cols,
+        rows: cleanedSnapshot.lines.length,
+        lines: cleanedSnapshot.lines,
+        styledLines: cleanedSnapshot.styledLines,
+      };
     case "textRange":
-      return planTextRange(snapshot, capture);
+      return planTextRange(cleanedSnapshot, capture);
   }
 };
+
+const trimTrailingBlankLines = (snapshot: TerminalSnapshot): TerminalSnapshot => {
+  let end = snapshot.lines.length;
+  while (end > 1 && snapshot.lines[end - 1] === "") end -= 1;
+  let lines = snapshot.lines.slice(0, end);
+  let styledLines = snapshot.styledLines.slice(0, end);
+  ({ lines, styledLines } = removeTrailingTransientPromptLine(lines, styledLines));
+  return {
+    ...snapshot,
+    lines,
+    styledLines,
+  };
+};
+
+const removeTrailingTransientPromptLine = (
+  lines: string[],
+  styledLines: StyledLine[],
+): { lines: string[]; styledLines: StyledLine[] } => {
+  if (lines.length < 2) return { lines, styledLines };
+  const promptIndex = lines.length - 1;
+  const transientIndex = lines.length - 2;
+  if (!isEmptyPrompt(lines[promptIndex]) || !isRightPromptStatusLine(lines[transientIndex])) {
+    return { lines, styledLines };
+  }
+  return {
+    lines: [...lines.slice(0, transientIndex), lines[promptIndex]],
+    styledLines: [...styledLines.slice(0, transientIndex), styledLines[promptIndex]],
+  };
+};
+
+const isEmptyPrompt = (line: string): boolean =>
+  /^[>\-$%#❯]\s*$/.test(line.trim());
+
+const isRightPromptStatusLine = (line: string): boolean =>
+  /^\s*(?:[~/]|[A-Za-z]:[\\/]).*\s+\d{1,2}:\d{2}(?::\d{2})?\s*$/.test(line);
 
 const planTextRange = (
   snapshot: TerminalSnapshot,
