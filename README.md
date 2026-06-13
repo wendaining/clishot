@@ -1,5 +1,7 @@
 # clishot
 
+**[中文 README](./docs/README.zh-CN.md)**
+
 `clishot` records real terminal sessions from YAML workflows and turns them into report-ready screenshots for lab reports, coursework, technical docs, and agent automation.
 
 clishot is built on top of termless and uses termless core as its terminal automation and rendering engine. We sincerely thank the termless project and its contributors.
