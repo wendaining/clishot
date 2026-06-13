@@ -95,7 +95,7 @@ clishot record demo.yml --out figures/final.png --shots-dir figures/steps
 
 Errors printed by commands inside the terminal are terminal content, not clishot failures. For example, a compiler error or Python traceback should still be captured.
 
-clishot fails for configuration errors, shell startup failure, wait timeouts, termless core unavailability, render failures, and output write failures. Failed runs keep `.clishot/<timestamp>-<spec>/` debug artifacts.
+clishot fails for configuration errors, shell startup failure, wait timeouts, termless core unavailability, render failures, and output write failures. Failed runs keep `tmp/tmp-<timestamp>-<spec>/` debug artifacts.
 
 ## Cross Platform Notes
 
@@ -104,4 +104,3 @@ Windows defaults to `pwsh -NoLogo` when no shell is configured. Linux and macOS 
 ## License
 
 clishot is released under the MIT License.
-

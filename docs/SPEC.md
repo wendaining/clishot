@@ -447,7 +447,7 @@ clishot record examples/gcc.yml --out figures/gcc-test.png
   可选。
   指定内部录制产物目录。
   如果不指定，默认使用：
-  .clishot/<timestamp>-<spec-basename>/
+  tmp/tmp-<timestamp>-<spec-basename>/
 
 --shots-dir <dir>
   可选。
@@ -1846,13 +1846,13 @@ fallbackToLastLines
 默认目录：
 
 ```text
-.clishot/<timestamp>-<spec-basename>/
+tmp/tmp-<timestamp>-<spec-basename>/
 ```
 
 目录结构：
 
 ```text
-.clishot/2026-06-12-183000-gcc/
+tmp/tmp-2026-06-12-183000-gcc/
   metadata.json
   normalized.yml
   events.jsonl
@@ -2156,7 +2156,7 @@ clishot 使用 termless core 作为底层引擎这一事实。
 如何把输出图片插入 Markdown、Typst、LaTeX 报告。
 如何处理 waitFor 超时。
 如何处理命令输出错误和 clishot 自身错误的区别。
-如何在失败时检查 .clishot capture-dir。
+如何在失败时检查 tmp/tmp-* capture-dir。
 安全注意事项：不要替用户执行危险命令，不要静默覆盖用户文件。
 开发注意事项：如果 Agent 在修改 clishot 仓库代码，必须遵循 docs/git-rule.md。
 ```

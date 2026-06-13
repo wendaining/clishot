@@ -87,6 +87,6 @@ Insert images into reports with normal paths:
 
 Compiler errors, Python tracebacks, failed tests, and command-not-found messages are terminal content. They should normally still produce screenshots. clishot errors are configuration failures, wait timeouts, termless core problems, render failures, and output write failures.
 
-When `waitFor` times out, inspect `.clishot/<timestamp>-<spec>/normalized.txt`, `events.jsonl`, and any generated debug images. Do not silently overwrite user files; pass `--force` only when overwriting is intentional.
+When `waitFor` times out, inspect `tmp/tmp-<timestamp>-<spec>/normalized.txt`, `events.jsonl`, and any generated debug images. Do not silently overwrite user files; pass `--force` only when overwriting is intentional.
 
 When modifying the clishot repository itself, follow `docs/git-rule.md` and keep commits small.

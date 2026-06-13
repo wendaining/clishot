@@ -95,7 +95,7 @@ clishot record demo.yml --out figures/final.png --shots-dir figures/steps
 
 终端内部命令输出的错误属于终端内容，不会默认导致 clishot 失败。例如编译错误、Python traceback、测试失败都应被正常截图。
 
-clishot 只在配置错误、shell 启动失败、waitFor 超时、termless core 不可用、渲染失败或输出写入失败时返回非零。失败时会保留 `.clishot/<timestamp>-<spec>/` 调试产物。
+clishot 只在配置错误、shell 启动失败、waitFor 超时、termless core 不可用、渲染失败或输出写入失败时返回非零。失败时会保留 `tmp/tmp-<timestamp>-<spec>/` 调试产物。
 
 ## 跨平台说明
 
@@ -104,4 +104,3 @@ Windows 默认推断 `pwsh -NoLogo`。Linux 和 macOS 默认使用 `$SHELL` 或 
 ## License
 
 clishot 使用 MIT License。
-
