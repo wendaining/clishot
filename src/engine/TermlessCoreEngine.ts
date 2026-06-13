@@ -231,7 +231,7 @@ export class TermlessCoreEngine extends EventEmitter {
 
   async waitForStartup(timeoutMs: number): Promise<void> {
     await this.until(() => this.outputBytes > 0 || !this.running, timeoutMs, "Timed out waiting for initial terminal output");
-    await this.waitForIdle(4500, Math.min(timeoutMs, 8000));
+    await this.waitForIdle(4000, Math.min(timeoutMs, 8000));
   }
 
   snapshot(): TerminalSnapshot {
