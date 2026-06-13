@@ -65,11 +65,13 @@ export class ScreenshotManager {
     const textX = margin + padding;
     const textY = margin + titleBarHeight + padding + fontSize;
 
-    const controls = win.showControls
+    const showsMacControls = win.showControls && win.frameStyle === "macos";
+    const controls = showsMacControls
       ? `<circle cx="${margin + 18}" cy="${margin + 18}" r="5" fill="#ff5f56"/><circle cx="${margin + 36}" cy="${margin + 18}" r="5" fill="#ffbd2e"/><circle cx="${margin + 54}" cy="${margin + 18}" r="5" fill="#27c93f"/>`
       : "";
+    const titleX = showsMacControls ? margin + 74 : margin + 14;
     const title = win.title
-      ? `<text x="${margin + 74}" y="${margin + 23}" fill="#d6d6d6" font-size="13" font-family="${escapeXml(font.family ?? "monospace")}">${escapeXml(win.title)}</text>`
+      ? `<text x="${titleX}" y="${margin + 23}" fill="#d6d6d6" font-size="13" font-family="${escapeXml(font.family ?? "monospace")}">${escapeXml(win.title)}</text>`
       : "";
     const lines = plan.styledLines.map((line, index) =>
       `<text x="${textX}" y="${textY + index * lineHeight}" xml:space="preserve">${line.map((segment) => {
