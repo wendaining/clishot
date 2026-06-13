@@ -6,7 +6,7 @@
 
 `clishot` generates **pseudo-terminal screenshots** by executing real terminal commands defined in YAML workflows on your local machine. Ideal for agent automation workflows.
 
-clishot is built on top of termless and uses termless core as its terminal automation and rendering engine. Sincerely thank the termless project and its contributors.
+clishot is built on top of [termless](https://github.com/beorn/termless) and uses [termless](https://github.com/beorn/termless) core as its terminal automation and rendering engine. Sincerely thank the [termless](https://github.com/beorn/termless) project and its contributors.
 
 ## Why clishot?
 

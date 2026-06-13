@@ -4,7 +4,7 @@
 
 `clishot` 是一个通过 YAML 编写真实的终端命令作为驱动，基于用户本机真实的终端生成**伪终端截图**的工具。适合 Agent 自动化工作流。
 
-clishot 构建在 termless 之上，使用 termless core 作为终端自动化和渲染引擎。感谢 termless 项目及其贡献者。
+clishot 构建在 [termless](https://github.com/beorn/termless) 之上，使用 [termless](https://github.com/beorn/termless) core 作为终端自动化和渲染引擎。感谢 [termless](https://github.com/beorn/termless) 项目及其贡献者。
 
 ## 为什么选择 clishot？
 
