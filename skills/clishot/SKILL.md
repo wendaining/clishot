@@ -44,8 +44,6 @@ Use `send` for typed commands and test input, `key` for combinations such as `Ct
 
 Prefer `waitFor.text` or `waitFor.regex` when a program prints a known prompt. Use `waitFor.idleMs` when the command has no stable final marker. Combine them when useful.
 
-Avoid here-documents such as `cat > file <<'EOF'` in report screenshots. They expose shell continuation prompts like `heredoc>` and make the session look less like normal terminal use. For short files, prefer a single `printf` command with quoted lines; for larger files, create the file outside the captured workflow and use the terminal steps to inspect or run it.
-
 ```yaml
 steps:
   - type: send
