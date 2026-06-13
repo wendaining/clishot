@@ -61,7 +61,7 @@ export const runRecord = async (config: ClishotConfig, options: RecordOptions): 
     try {
       for (const [index, step] of config.steps.entries()) {
         await appendEvent({ time: new Date().toISOString(), type: "step:start", data: { index, step } });
-        await runStep(step, engine, screenshotManager, officialShotsDir, captureShotsDir, options.format);
+        await runStep(step, engine, screenshotManager, officialShotsDir, captureShotsDir, options.format, config);
         await appendEvent({ time: new Date().toISOString(), type: "step:end", data: { index, type: step.type } });
       }
     } finally {
@@ -100,6 +100,7 @@ const runStep = async (
   officialShotsDir: string,
   captureShotsDir: string,
   format: ImageFormat,
+  config: ClishotConfig,
 ): Promise<void> => {
   switch (step.type) {
     case "wait":
@@ -117,7 +118,7 @@ const runStep = async (
     case "screenshot": {
       await engine.flush();
       const snapshot = engine.snapshot();
-      const plan = planCapture(snapshot, step.capture ?? { mode: "viewport" });
+      const plan = planCapture(snapshot, step.capture ?? config.capture);
       await screenshotManager.write(path.join(officialShotsDir, `${step.name}.${format}`), plan);
       await screenshotManager.write(path.join(captureShotsDir, `${step.name}.${format}`), plan);
       break;

@@ -45,7 +45,7 @@ appearance:
     scale: 2
 
 capture:
-  mode: viewport
+  mode: fullScrollback
 
 steps:
   - type: send
@@ -56,6 +56,7 @@ steps:
 ```
 
 YAML 不设置 `version` 或 `engine` 字段。工作目录写在 `shell.cwd`，输出缩放倍率写在 `appearance.output.scale`。
+如果省略 `capture`，clishot 默认使用 `fullScrollback`，最终截图会包含完整录制流程。只想截当前可见窗口时，可以显式设置 `capture.mode: viewport`。
 
 ## 命令
 

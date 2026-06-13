@@ -140,7 +140,7 @@ export const configSchema = z.object({
       quality: z.number().int().min(1).max(100).default(92).optional(),
     }).strict().default({}).optional(),
   }).strict().default({}),
-  capture: captureSchema.default({ mode: "viewport" }),
+  capture: captureSchema.default({ mode: "fullScrollback" }),
   limits: z.object({
     stepTimeoutMs: z.number().int().positive().default(15000).optional(),
     totalTimeoutMs: z.number().int().positive().default(120000).optional(),
@@ -168,4 +168,3 @@ export type ClishotConfig = z.infer<typeof configSchema>;
 export type ClishotStep = z.infer<typeof stepSchema>;
 export type CaptureConfig = z.infer<typeof captureSchema>;
 export type WaitForConfig = z.infer<typeof waitForSchema>;
-

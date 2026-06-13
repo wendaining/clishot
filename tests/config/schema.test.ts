@@ -7,6 +7,9 @@ describe("config schema", () => {
       steps: [{ type: "wait", ms: 1 }],
     });
     expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.capture.mode).toBe("fullScrollback");
+    }
   });
 
   it("rejects duplicate screenshot names", () => {
@@ -19,4 +22,3 @@ describe("config schema", () => {
     expect(parsed.success).toBe(false);
   });
 });
-

@@ -24,7 +24,7 @@ terminal:
   rows: 30
 
 capture:
-  mode: viewport
+  mode: fullScrollback
 
 steps:
   - type: send
@@ -58,7 +58,7 @@ steps:
 
 ## Capture Modes
 
-Use `viewport` for ordinary report screenshots, `lastLines` for long command output, `fullScrollback` when the full session matters, and `textRange` when the report needs a bounded slice between markers.
+If `capture` is omitted, clishot defaults to `fullScrollback` so the final screenshot contains the whole YAML workflow. Use `viewport` when only the visible terminal window should be captured, `lastLines` for the tail of long output, and `textRange` when the report needs a bounded slice between markers.
 
 ## Running clishot
 

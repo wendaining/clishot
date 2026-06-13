@@ -45,7 +45,7 @@ appearance:
     scale: 2
 
 capture:
-  mode: viewport
+  mode: fullScrollback
 
 steps:
   - type: send
@@ -56,6 +56,7 @@ steps:
 ```
 
 YAML files do not use `version` or `engine` fields. Working directories belong in `shell.cwd`; output scale belongs in `appearance.output.scale`.
+If `capture` is omitted, clishot defaults to `fullScrollback` so the final screenshot includes the whole recorded workflow. Use `capture.mode: viewport` when you only want the visible terminal window.
 
 ## Commands
 

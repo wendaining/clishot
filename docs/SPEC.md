@@ -710,7 +710,7 @@ appearance:
     quality: 92
 
 capture:
-  mode: viewport
+  mode: fullScrollback
 
 limits:
   stepTimeoutMs: 15000
@@ -1576,7 +1576,7 @@ buffer
 
 ```yaml
 capture:
-  mode: viewport
+  mode: fullScrollback
 ```
 
 必须支持以下模式：
@@ -1594,6 +1594,15 @@ fullScrollback
 range
 ```
 
+如果 YAML 省略 `capture`，默认应使用：
+
+```yaml
+capture:
+  mode: fullScrollback
+```
+
+这样最终主截图默认包含 YAML 工作流产生的完整终端记录，适合报告插图和 Agent 自动化场景。只需要当前可见窗口时，用户应显式设置 `capture.mode: viewport`。
+
 ### 17.1 `viewport`
 
 ```yaml
@@ -1603,7 +1612,7 @@ capture:
 
 截当前终端可见区域，也就是 `terminal.rows` 行。
 
-这是默认模式，最接近用户手动截终端当前窗口。
+这是最接近用户手动截终端当前窗口的模式，但不是默认模式。
 
 ### 17.2 `lastLines`
 
