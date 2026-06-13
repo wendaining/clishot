@@ -326,7 +326,7 @@ docs/SPEC.md：
   中文。
   即本文档主体。
 
-docs/SKILL.md：
+skills/clishot/SKILL.md：
   英文。
   面向 Agents，说明 Agent 应如何生成 YAML、调用 clishot、处理输出图片、处理错误。
 
@@ -2139,7 +2139,7 @@ maxOutputBytes
 项目必须提供 Agent-facing Skill：
 
 ```text
-docs/SKILL.md
+skills/clishot/SKILL.md
 ```
 
 语言要求：英文。
@@ -2263,7 +2263,7 @@ missing marker 策略。
 debug artifacts。
 README.md。
 docs/README.zh-CN.md。
-docs/SKILL.md。
+skills/clishot/SKILL.md。
 LICENSE。
 ```
 
@@ -2572,7 +2572,7 @@ README.md 存在，并使用英文。
 README.md 说明 clishot 使用 termless core，并对 termless 表示感谢。
 docs/README.zh-CN.md 存在，并使用中文。
 docs/README.zh-CN.md 说明 clishot 使用 termless core，并对 termless 表示感谢。
-docs/SKILL.md 存在，并使用英文。
+skills/clishot/SKILL.md 存在，并使用英文。
 docs/SPEC.md 存在，并使用中文。
 LICENSE 存在。
 LICENSE 使用 MIT License。
@@ -2620,7 +2620,7 @@ package.json 中 license 字段为 MIT。
 34. README.md 必须说明 clishot 使用 termless core，并对 termless 项目表示感谢。
 35. 必须提供中文 docs/README.zh-CN.md。
 36. docs/README.zh-CN.md 必须说明 clishot 使用 termless core，并对 termless 项目表示感谢。
-37. 必须提供英文 docs/SKILL.md。
+37. 必须提供英文 skills/clishot/SKILL.md。
 38. 必须提供中文 docs/SPEC.md。
 39. 必须提供 LICENSE 文件。
 40. LICENSE 必须使用 MIT License。
