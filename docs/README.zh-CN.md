@@ -6,6 +6,12 @@
 
 clishot 构建在 termless 之上，使用 termless core 作为终端自动化和渲染引擎。感谢 termless 项目及其贡献者。
 
+## 为什么选择 clishot？
+
+- **完整终端客制化** — 兼容 OhMyPosh、OhMyZSH、Starship 等一切你正在使用的 shell 主题和插件。
+- **真实 ANSI 解析** — 读取终端原生 ANSI 转义序列，而非像素级截图拼接。
+- **为 Agent 而生** — YAML 驱动、无头运行、结果确定；从设计之初就面向 AI Agent 自动化工作流。
+
 ## 实例
 
 这些图片都是由本项目程序生成的，通过读取真实终端运行的字节流构建。
