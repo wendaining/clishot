@@ -71,8 +71,11 @@ export class ScreenshotManager {
     const title = win.title
       ? `<text x="${margin + 74}" y="${margin + 23}" fill="#d6d6d6" font-size="13" font-family="${escapeXml(font.family ?? "monospace")}">${escapeXml(win.title)}</text>`
       : "";
-    const lines = plan.lines.map((line, index) =>
-      `<text x="${textX}" y="${textY + index * lineHeight}" xml:space="preserve">${escapeXml(line)}</text>`
+    const lines = plan.styledLines.map((line, index) =>
+      `<text x="${textX}" y="${textY + index * lineHeight}" xml:space="preserve">${line.map((segment) => {
+        const fill = segment.color ? ` fill="${segment.color}"` : "";
+        return `<tspan${fill}>${escapeXml(segment.text)}</tspan>`;
+      }).join("")}</text>`
     ).join("");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -87,4 +90,3 @@ export class ScreenshotManager {
 `;
   }
 }
-

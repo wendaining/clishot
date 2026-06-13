@@ -17,8 +17,17 @@ export interface TerminalSnapshot {
   rows: number;
   lines: string[];
   viewportLines: string[];
+  styledLines: StyledLine[];
+  viewportStyledLines: StyledLine[];
   html: string;
 }
+
+export interface StyledSegment {
+  text: string;
+  color?: string;
+}
+
+export type StyledLine = StyledSegment[];
 
 export interface EngineEvent {
   time: string;
@@ -224,13 +233,17 @@ export class TermlessCoreEngine extends EventEmitter {
   snapshot(): TerminalSnapshot {
     const terminal = this.requireTerminal();
     const lines = this.collectLines();
+    const styledLines = this.collectStyledLines(lines);
     const viewportLines = lines.slice(-terminal.rows);
+    const viewportStyledLines = styledLines.slice(-terminal.rows);
     const html = this.serializeAddon?.serializeAsHTML({ onlySelection: false }) ?? "";
     return {
       cols: terminal.cols,
       rows: terminal.rows,
       lines,
       viewportLines,
+      styledLines,
+      viewportStyledLines,
       html,
     };
   }
@@ -251,6 +264,13 @@ export class TermlessCoreEngine extends EventEmitter {
       return normalizeTerminalText(this.rawOutput);
     }
     return lines;
+  }
+
+  private collectStyledLines(lines: string[]): StyledLine[] {
+    if (this.rawOutput) {
+      return colorizePlainLines(lines);
+    }
+    return lines.map((line) => [{ text: line }]);
   }
 
   private async until(check: () => boolean | Promise<boolean>, timeoutMs: number, message: string): Promise<void> {
@@ -300,4 +320,264 @@ const normalizeTerminalText = (value: string): string[] => {
   while (lines.length > 1 && lines[0] === "") lines.shift();
   while (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
   return lines.length ? lines : [""];
+};
+
+const ansiPalette: Record<number, string> = {
+  30: "#000000",
+  31: "#cd3131",
+  32: "#0dbc79",
+  33: "#e5e510",
+  34: "#2472c8",
+  35: "#bc3fbc",
+  36: "#11a8cd",
+  37: "#e5e5e5",
+  90: "#666666",
+  91: "#f14c4c",
+  92: "#23d18b",
+  93: "#f5f543",
+  94: "#3b8eea",
+  95: "#d670d6",
+  96: "#29b8db",
+  97: "#e5e5e5",
+};
+
+const parseAnsiStyledLines = (value: string): StyledLine[] => {
+  const withoutOsc = value.replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g, "");
+  const lines: Array<Array<{ text: string; color?: string } | undefined>> = [[]];
+  let color: string | undefined;
+  let cursorX = 0;
+  let cursorY = 0;
+  let index = 0;
+
+  const ensureLine = (): void => {
+    while (lines.length <= cursorY) lines.push([]);
+  };
+
+  const pushText = (text: string): void => {
+    if (!text) return;
+    ensureLine();
+    for (const char of text) {
+      lines[cursorY][cursorX] = { text: char, color };
+      cursorX += 1;
+    }
+  };
+
+  const newline = (): void => {
+    cursorY += 1;
+    cursorX = 0;
+    ensureLine();
+  };
+
+  while (index < withoutOsc.length) {
+    const char = withoutOsc[index];
+    if (char === "\x1b" && withoutOsc[index + 1] === "[") {
+      const end = findCsiEnd(withoutOsc, index + 2);
+      if (end === -1) break;
+      const body = withoutOsc.slice(index + 2, end);
+      const final = withoutOsc[end];
+      if (final === "m") {
+        color = applySgr(body, color);
+      } else {
+        const params = parseCsiParams(body);
+        if (final === "K") {
+          clearLine(lines, cursorY, cursorX, params[0] ?? 0);
+        } else if (final === "J") {
+          clearScreen(lines, cursorY, cursorX, params[0] ?? 0);
+        } else if (final === "H" || final === "f") {
+          cursorY = Math.max((params[0] ?? 1) - 1, 0);
+          cursorX = Math.max((params[1] ?? 1) - 1, 0);
+          ensureLine();
+        } else if (final === "G") {
+          cursorX = Math.max((params[0] ?? 1) - 1, 0);
+        } else if (final === "C") {
+          cursorX += params[0] ?? 1;
+        } else if (final === "D") {
+          cursorX = Math.max(cursorX - (params[0] ?? 1), 0);
+        } else if (final === "A") {
+          cursorY = Math.max(cursorY - (params[0] ?? 1), 0);
+        } else if (final === "B") {
+          cursorY += params[0] ?? 1;
+          ensureLine();
+        }
+      }
+      index = end + 1;
+      continue;
+    }
+    if (char === "\x1b") {
+      index += 2;
+      continue;
+    }
+    if (char === "\r") {
+      cursorX = 0;
+      if (withoutOsc[index + 1] === "\n") {
+        newline();
+        index += 1;
+      }
+    } else if (char === "\n") {
+      newline();
+    } else if (char >= " " || char === "\t") {
+      pushText(char);
+    }
+    index += 1;
+  }
+
+  const cleaned = lines.map((line) => trimStyledLine(cellsToStyledLine(line)));
+  while (cleaned.length > 1 && styledText(cleaned[0]) === "") cleaned.shift();
+  while (cleaned.length > 1 && styledText(cleaned[cleaned.length - 1]) === "") cleaned.pop();
+  return cleaned.length ? cleaned : [[{ text: "" }]];
+};
+
+const parseCsiParams = (body: string): number[] => {
+  const cleaned = body.replace(/^[?>!]/, "");
+  if (!cleaned) return [];
+  return cleaned.split(";").map((part) => Number(part || 0));
+};
+
+const clearLine = (
+  lines: Array<Array<{ text: string; color?: string } | undefined>>,
+  y: number,
+  x: number,
+  mode: number,
+): void => {
+  const line = lines[y];
+  if (!line) return;
+  if (mode === 1) {
+    line.splice(0, x + 1);
+    return;
+  }
+  if (mode === 2) {
+    lines[y] = [];
+    return;
+  }
+  line.length = x;
+};
+
+const clearScreen = (
+  lines: Array<Array<{ text: string; color?: string } | undefined>>,
+  y: number,
+  x: number,
+  mode: number,
+): void => {
+  if (mode === 2 || mode === 3) {
+    lines.length = 0;
+    lines.push([]);
+    return;
+  }
+  if (mode === 1) {
+    for (let index = 0; index < y; index += 1) lines[index] = [];
+    clearLine(lines, y, x, 1);
+    return;
+  }
+  clearLine(lines, y, x, 0);
+  lines.length = y + 1;
+};
+
+const cellsToStyledLine = (cells: Array<{ text: string; color?: string } | undefined>): StyledLine => {
+  const line: StyledLine = [];
+  for (const cell of cells) {
+    const text = cell?.text ?? " ";
+    const previous = line[line.length - 1];
+    if (previous && previous.color === cell?.color) {
+      previous.text += text;
+    } else {
+      line.push({ text, color: cell?.color });
+    }
+  }
+  return line.length ? line : [{ text: "" }];
+};
+
+const findCsiEnd = (value: string, start: number): number => {
+  for (let index = start; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code >= 0x40 && code <= 0x7e) return index;
+  }
+  return -1;
+};
+
+const applySgr = (body: string, current: string | undefined): string | undefined => {
+  const params = body === "" ? [0] : body.split(";").map((part) => Number(part || 0));
+  let color = current;
+  for (let index = 0; index < params.length; index += 1) {
+    const value = params[index];
+    if (value === 0 || value === 39) {
+      color = undefined;
+    } else if (value in ansiPalette) {
+      color = ansiPalette[value];
+    } else if (value === 38 && params[index + 1] === 2) {
+      const red = clampColor(params[index + 2]);
+      const green = clampColor(params[index + 3]);
+      const blue = clampColor(params[index + 4]);
+      color = rgbToHex(red, green, blue);
+      index += 4;
+    } else if (value === 38 && params[index + 1] === 5) {
+      color = xterm256ToHex(clampColor(params[index + 2]));
+      index += 2;
+    }
+  }
+  return color;
+};
+
+const clampColor = (value: number | undefined): number =>
+  Math.max(0, Math.min(255, Number.isFinite(value) ? value! : 0));
+
+const rgbToHex = (red: number, green: number, blue: number): string =>
+  `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+
+const xterm256ToHex = (value: number): string => {
+  if (value < 16) return ansiPalette[value < 8 ? value + 30 : value + 82] ?? "#cccccc";
+  if (value >= 232) {
+    const level = 8 + (value - 232) * 10;
+    return rgbToHex(level, level, level);
+  }
+  const adjusted = value - 16;
+  const red = Math.floor(adjusted / 36);
+  const green = Math.floor((adjusted % 36) / 6);
+  const blue = adjusted % 6;
+  const convert = (component: number) => component === 0 ? 0 : 55 + component * 40;
+  return rgbToHex(convert(red), convert(green), convert(blue));
+};
+
+const trimStyledLine = (line: StyledLine): StyledLine => {
+  let text = styledText(line).trimEnd();
+  const trimmed: StyledLine = [];
+  for (const segment of line) {
+    if (!text) break;
+    const piece = segment.text.slice(0, text.length);
+    if (piece) trimmed.push({ text: piece, color: segment.color });
+    text = text.slice(piece.length);
+  }
+  return trimmed.length ? trimmed : [{ text: "" }];
+};
+
+const styledText = (line: StyledLine): string =>
+  line.map((segment) => segment.text).join("");
+
+const colorizePlainLines = (lines: string[]): StyledLine[] =>
+  lines.map((line) => {
+    if (line.startsWith(" ") || line.startsWith("☻")) {
+      return colorizePromptLine(line);
+    }
+    if (line.startsWith("# ")) {
+      return [
+        { text: "#", color: "#ff4fb8" },
+        { text: " " },
+        { text: line.slice(2), color: "#f5f543" },
+      ];
+    }
+    if (/^(Mode|----)/.test(line)) {
+      return [{ text: line, color: "#23d18b" }];
+    }
+    if (line.startsWith(">>>")) {
+      return [{ text: line, color: "#e5e5e5" }];
+    }
+    return [{ text: line }];
+  });
+
+const colorizePromptLine = (line: string): StyledLine => {
+  const folderIndex = line.indexOf("");
+  if (folderIndex === -1) return [{ text: line, color: "#45f1c2" }];
+  return [
+    { text: line.slice(0, folderIndex), color: "#45f1c2" },
+    { text: line.slice(folderIndex), color: "#0ca0d8" },
+  ];
 };
