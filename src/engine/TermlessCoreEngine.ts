@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import xtermHeadless from "@xterm/headless";
 import xtermSerialize from "@xterm/addon-serialize";
+import type { IBufferCell } from "@xterm/headless";
 import type { IPty } from "node-pty";
 import type { ClishotConfig } from "../config/schema.js";
 import { ClishotError } from "../utils/errors.js";
@@ -267,10 +268,41 @@ export class TermlessCoreEngine extends EventEmitter {
   }
 
   private collectStyledLines(lines: string[]): StyledLine[] {
-    if (this.rawOutput) {
-      return colorizePlainLines(lines);
+    const styledLines = this.collectBufferStyledLines();
+    if (styledText(styledLines.flat()).length > 0) {
+      return styledLines;
     }
-    return lines.map((line) => [{ text: line }]);
+    if (this.rawOutput) {
+      return parseAnsiStyledLines(this.rawOutput);
+    }
+    return colorizePlainLines(lines);
+  }
+
+  private collectBufferStyledLines(): StyledLine[] {
+    const terminal = this.requireTerminal();
+    const buffer = terminal.buffer.active;
+    const lines: StyledLine[] = [];
+    const reusableCell = buffer.getNullCell();
+
+    for (let rowIndex = 0; rowIndex < buffer.length; rowIndex += 1) {
+      const row = buffer.getLine(rowIndex);
+      const styledLine: StyledLine = [];
+      if (row) {
+        for (let column = 0; column < terminal.cols; column += 1) {
+          const cell = row.getCell(column, reusableCell);
+          if (!cell || cell.getWidth() === 0) continue;
+          const text = cell.getChars() || " ";
+          appendStyledSegment(styledLine, {
+            text,
+            color: foregroundColor(cell),
+          });
+        }
+      }
+      lines.push(trimStyledLine(styledLine));
+    }
+
+    while (lines.length > 1 && styledText(lines[0]) === "") lines.shift();
+    return lines.length ? lines : [[{ text: "" }]];
   }
 
   private async until(check: () => boolean | Promise<boolean>, timeoutMs: number, message: string): Promise<void> {
@@ -476,14 +508,29 @@ const cellsToStyledLine = (cells: Array<{ text: string; color?: string } | undef
   const line: StyledLine = [];
   for (const cell of cells) {
     const text = cell?.text ?? " ";
-    const previous = line[line.length - 1];
-    if (previous && previous.color === cell?.color) {
-      previous.text += text;
-    } else {
-      line.push({ text, color: cell?.color });
-    }
+    appendStyledSegment(line, { text, color: cell?.color });
   }
   return line.length ? line : [{ text: "" }];
+};
+
+const appendStyledSegment = (line: StyledLine, segment: StyledSegment): void => {
+  const previous = line[line.length - 1];
+  if (previous && previous.color === segment.color) {
+    previous.text += segment.text;
+    return;
+  }
+  line.push(segment);
+};
+
+const foregroundColor = (cell: IBufferCell): string | undefined => {
+  if (cell.isFgDefault()) return undefined;
+  if (cell.isFgRGB()) {
+    return rgbNumberToHex(cell.getFgColor());
+  }
+  if (cell.isFgPalette()) {
+    return xterm256ToHex(cell.getFgColor());
+  }
+  return undefined;
 };
 
 const findCsiEnd = (value: string, start: number): number => {
@@ -522,6 +569,9 @@ const clampColor = (value: number | undefined): number =>
 
 const rgbToHex = (red: number, green: number, blue: number): string =>
   `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+
+const rgbNumberToHex = (value: number): string =>
+  `#${value.toString(16).padStart(6, "0").slice(-6)}`;
 
 const xterm256ToHex = (value: number): string => {
   if (value < 16) return ansiPalette[value < 8 ? value + 30 : value + 82] ?? "#cccccc";
