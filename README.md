@@ -4,11 +4,11 @@
 
 `clishot` records real terminal sessions from YAML workflows and turns them into report-ready screenshots for lab reports, coursework, technical docs, and agent automation.
 
-clishot is built on top of termless and uses termless core as its terminal automation and rendering engine. We sincerely thank the termless project and its contributors.
+clishot is built on top of termless and uses termless core as its terminal automation and rendering engine. Sincerely thank the termless project and its contributors.
 
 ## Quick Start From The Repo
 
-If you just found this repository and want to try it locally, clone it, install dependencies, build the CLI, and run one of the included examples:
+You can clone it, install dependencies, build the CLI, and run one of the included examples:
 
 ```bash
 git clone <repo-url> clishot
@@ -134,4 +134,4 @@ The Skill is guidance only; it does not add runtime features. Human users can re
 
 ## License
 
-clishot is released under the MIT License.
+MIT
