@@ -155,7 +155,10 @@ export class TermlessCoreEngine extends EventEmitter {
     this.requirePty();
     this.emitEvent("input:send", { text, enter });
     this.lastOutputAt = Date.now();
-    this.pty!.write(`${text}${enter ? "\r" : ""}`);
+    const input = text.includes("\n")
+      ? `\x1b[200~${text.replace(/\r?\n/g, "\r")}\x1b[201~${enter ? "\r" : ""}`
+      : `${text}${enter ? "\r" : ""}`;
+    this.pty!.write(input);
   }
 
   async key(combo: string): Promise<void> {
@@ -228,7 +231,7 @@ export class TermlessCoreEngine extends EventEmitter {
 
   async waitForStartup(timeoutMs: number): Promise<void> {
     await this.until(() => this.outputBytes > 0 || !this.running, timeoutMs, "Timed out waiting for initial terminal output");
-    await this.waitForIdle(2500, Math.min(timeoutMs, 6000));
+    await this.waitForIdle(4500, Math.min(timeoutMs, 8000));
   }
 
   snapshot(): TerminalSnapshot {
