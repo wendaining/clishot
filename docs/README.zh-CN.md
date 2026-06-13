@@ -1,8 +1,18 @@
 # clishot
 
-`clishot` 是一个通过 YAML 驱动真实终端会话，并生成报告用截图的工具，适合实验报告、课程作业、技术文档和 Agent 自动化工作流。
+<img src="./img/clishot-logo.png" alt="logo" style="zoom:30%">
+
+`clishot` 是一个通过 YAML 编写真实的终端命令作为驱动，基于用户本机真实的终端生成**伪终端截图**的工具。适合 Agent 自动化工作流。
 
 clishot 构建在 termless 之上，使用 termless core 作为终端自动化和渲染引擎。感谢 termless 项目及其贡献者。
+
+## 实例
+
+这些图片都是由本项目程序生成的，通过读取真实终端运行的字节流构建。
+
+<img src="./img/tmp-pwsh-no-controls.png" style="zoom:33%;" />
+
+<img src="./img/tmp-wsl-ohmyzsh-trimmed.png" style="zoom:33%;" />
 
 ## 从仓库开始使用
 
@@ -77,8 +87,7 @@ steps:
       idleMs: 800
 ```
 
-YAML 不设置 `version` 或 `engine` 字段。工作目录写在 `shell.cwd`，输出缩放倍率写在 `appearance.output.scale`。
-如果省略 `capture`，clishot 默认使用 `fullScrollback`，最终截图会包含完整录制流程。只想截当前可见窗口时，可以显式设置 `capture.mode: viewport`。
+具体规范参考 [SPEC](./SPEC.md) 和 [SKILL.md](../skills/clishot/SKILL.md)
 
 ## 命令
 
