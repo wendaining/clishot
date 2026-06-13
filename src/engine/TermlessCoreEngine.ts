@@ -236,8 +236,8 @@ export class TermlessCoreEngine extends EventEmitter {
 
   snapshot(): TerminalSnapshot {
     const terminal = this.requireTerminal();
-    const lines = this.collectLines();
-    const styledLines = this.collectStyledLines(lines);
+    const lines = stripHeredocContinuationPrompts(this.collectLines());
+    const styledLines = stripHeredocContinuationPromptsFromStyledLines(this.collectStyledLines(lines));
     const viewportLines = lines.slice(-terminal.rows);
     const viewportStyledLines = styledLines.slice(-terminal.rows);
     const html = this.serializeAddon?.serializeAsHTML({ onlySelection: false }) ?? "";
@@ -604,6 +604,31 @@ const trimStyledLine = (line: StyledLine): StyledLine => {
 
 const styledText = (line: StyledLine): string =>
   line.map((segment) => segment.text).join("");
+
+export const stripHeredocContinuationPrompts = (lines: string[]): string[] =>
+  lines.map((line) => line.replace(/^heredoc>\s?/, ""));
+
+export const stripHeredocContinuationPromptsFromStyledLines = (lines: StyledLine[]): StyledLine[] =>
+  lines.map((line) => {
+    const match = styledText(line).match(/^heredoc>\s?/);
+    if (!match) return line;
+    return dropLeadingChars(line, match[0].length);
+  });
+
+const dropLeadingChars = (line: StyledLine, count: number): StyledLine => {
+  const trimmed: StyledLine = [];
+  let remaining = count;
+  for (const segment of line) {
+    if (remaining >= segment.text.length) {
+      remaining -= segment.text.length;
+      continue;
+    }
+    const text = segment.text.slice(remaining);
+    if (text) trimmed.push({ ...segment, text });
+    remaining = 0;
+  }
+  return trimmed.length ? trimmed : [{ text: "" }];
+};
 
 const colorizePlainLines = (lines: string[]): StyledLine[] =>
   lines.map((line) => {
